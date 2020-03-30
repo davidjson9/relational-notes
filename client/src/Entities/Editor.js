@@ -13,6 +13,7 @@ import {
 
 import ConsoleButtons from '../ConsoleButtons';
 import SimpleLog from './SimpleLog.js';
+import MouseTooltip from '../libs/MouseTooltip.js'
 
 const rawContent = {
   blocks: [
@@ -74,12 +75,6 @@ export default class EntityEditorExample extends Component {
       {
         strategy: getEntityStrategy('IMMUTABLE'),
         component: TokenSpan
-      }, {
-        strategy: getEntityStrategy('MUTABLE'),
-        component: TokenSpan
-      }, {
-        strategy: getEntityStrategy('SEGMENTED'),
-        component: TokenSpan
       }
     ]);
     const blocks = convertFromRaw(rawContent);
@@ -91,7 +86,8 @@ export default class EntityEditorExample extends Component {
         data: '',
       },
       savedBlocks: [],
-      savedEntities: {}
+      savedEntities: {},
+      isMouseTooltipVisible: false,
     };
 
     this.setSavedBlocks = (savedBlocks) => {
@@ -112,20 +108,26 @@ export default class EntityEditorExample extends Component {
         { editorState },
         () => this.getEntityAtSelection(this.state.editorState),
       );
-      if (true) {
-        // console.log("hello");
-        var selectionState = editorState.getSelection();
-        var startKey = selectionState.getStartKey();
-        var endKey = selectionState.getEndKey();
-        var anchorKey = selectionState.getAnchorKey();
-        var currentContent = editorState.getCurrentContent();
-        var currentContentBlock = currentContent.getBlockForKey(anchorKey);
-        var start = selectionState.getStartOffset();
-        var end = selectionState.getEndOffset();
-        var selectedText = currentContentBlock.getText().slice(start, end);
-        // console.log(start, end, startKey, endKey);
 
-      };
+      var selectionState = editorState.getSelection();
+      var startKey = selectionState.getStartKey();
+      var endKey = selectionState.getEndKey();
+      var anchorKey = selectionState.getAnchorKey();
+      var currentContent = editorState.getCurrentContent();
+      var currentContentBlock = currentContent.getBlockForKey(anchorKey);
+      var start = selectionState.getStartOffset();
+      var end = selectionState.getEndOffset();
+      var selectedText = currentContentBlock.getText().slice(start, end);
+      console.log(start, end, startKey, endKey);
+
+      console.log(startKey, endKey, startKey == endKey);
+
+      if (startKey !== endKey || Math.abs(end - start) > 0) {
+        console.log("selection found!");
+        var event = new MouseEvent('activateClickBox');
+        console.log(event);
+        window.dispatchEvent(event);
+      }
     }
 
 
@@ -155,6 +157,17 @@ export default class EntityEditorExample extends Component {
     this.setEntityButtonHandler = () => this.setEntityAtSelection(this.state.addEntityInputs);
     this.handleKeyCommand = (command) => this._handleKeyCommand(command);
 
+    this.disableMouseTooltip = () => {
+      // the first argument is always going to be the previous state
+      this.setState({ isMouseTooltipVisible: false });
+    };
+
+    this.enableMouseTooltip = () => {
+      // the first argument is always going to be the previous state
+      this.setState({ isMouseTooltipVisible: true });
+      console.log("should be true now");
+
+    };
   }
 
   _handleKeyCommand(command) {
@@ -224,6 +237,21 @@ export default class EntityEditorExample extends Component {
   render() {
     return (
       <div>
+        <MouseTooltip
+          visible={this.state.isMouseTooltipVisible}
+          offsetX={15}
+          offsetY={10}
+          enableMouseTooltip={this.enableMouseTooltip}
+          disableMouseTooltip={this.disableMouseTooltip}
+        >
+          <form>
+            <label>
+              Name:
+              <input type="text" name="Tag" />
+            </label>
+            <input type="submit" value="Submit" />
+          </form>
+        </MouseTooltip>
         <ConsoleButtons
           buttons={[
             {
@@ -249,6 +277,8 @@ export default class EntityEditorExample extends Component {
             ref="editor"
           />
         </div>
+        {/*  make this into a .map function, look at travel log App.js, line 50 */}
+        <hr></hr>
         <SimpleLog
           savedBlocks={this.state.savedBlocks}
           savedEntities={this.state.savedEntities}

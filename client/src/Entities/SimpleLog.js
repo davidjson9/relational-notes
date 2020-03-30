@@ -1,64 +1,10 @@
 import React from 'react';
 import { Editor, EditorState, convertFromRaw, CompositeDecorator } from "draft-js";
-
-var rawContent = {
-  blocks: [
-    {
-      text: (
-        'This is an "immutable" entity: Superman. Deleting any ' +
-        'characters will delete the entire entity. Adding characters ' +
-        'will remove the entity from the range.'
-      ),
-      type: 'unstyled',
-      entityRanges: [
-        {
-          offset: 31,
-          length: 8,
-          key: 'first'
-        }
-      ]
-    }, {
-      text: '',
-      type: 'unstyled'
-    }, {
-      text: (
-        'This is a "mutable" entity: Batman. Characters may be added ' +
-        'and removed.'
-      ),
-      type: 'unstyled',
-    }, {
-      text: '',
-      type: 'unstyled'
-    }, {
-      text: (
-        'This is a "segmented" entity: Green Lantern. Deleting any ' +
-        'characters will delete the current "segment" from the range. ' +
-        'Adding characters will remove the entire entity from the range.'
-      ),
-      type: 'unstyled',
-    }
-  ],
-  entityMap: {
-    first: {
-      type: 'TOKEN',
-      mutability: 'IMMUTABLE'
-    },
-    second: {
-      type: 'TOKEN',
-      mutability: 'MUTABLE'
-    },
-    third: {
-      type: 'TOKEN',
-      mutability: 'SEGMENTED'
-    }
-  }
-};
+import { Button, Accordion, Card } from 'react-bootstrap';
 
 export default class SimpleLog extends React.Component {
   constructor(props) {
     super(props);
-    console.log("rerun!")
-    const blocks = convertFromRaw(rawContent);
     this.state = {
       // editorState: EditorState.createWithContent(blocks, decorator),
       addEntityInputs: {
@@ -88,9 +34,23 @@ export default class SimpleLog extends React.Component {
     var editorState = EditorState.createWithContent(convertFromRaw(rawContent), decorator);
 
     return (
-      <div className="App">
-        {/* <Editor editorState={this.state.editorState} readOnly={true} /> */}
-        <Editor editorState={editorState} readOnly={true} />
+      <div className="SimpleLog">
+
+
+        <Accordion>
+          <Card>
+            <Card.Header>
+              <Accordion.Toggle as={Button} variant="link" eventKey="0">
+                Tag Title
+                </Accordion.Toggle>
+            </Card.Header>
+            <Accordion.Collapse eventKey="0">
+              <Card.Body>
+                <Editor editorState={editorState} readOnly={true} />
+              </Card.Body>
+            </Accordion.Collapse>
+          </Card>
+        </Accordion>
       </div>
     );
 

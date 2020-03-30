@@ -38,20 +38,26 @@ class MouseTooltip extends React.PureComponent {
         xPosition,
         yPosition
       });
+
+      this.props.enableMouseTooltip();
+      console.log("updated tooltip?")
+      console.log(xPosition, yPosition);
+      console.log(this.state);
+
     });
 
     _defineProperty(this, "inFocus", (e) => {
       if (document.getElementById('clickbox').contains(e.target)) {
         // nothing
       } else {
-        this.props.toggleMouseTooltip();
+        this.props.disableMouseTooltip();
       }
     });
 
     // 34 todo
     _defineProperty(this, "addListener", () => {
       window.addEventListener('mousemove', this.getTooltipPosition);
-      window.addEventListener('updatexy', this.updateTooltipPosition);
+      window.addEventListener('activateClickBox', this.updateTooltipPosition);
       window.addEventListener('click', this.inFocus);
 
       this.setState({
@@ -63,7 +69,7 @@ class MouseTooltip extends React.PureComponent {
 
     _defineProperty(this, "removeListener", () => {
       window.removeEventListener('mousemove', this.getTooltipPosition);
-      window.removeEventListener('updatexy', this.updateTooltipPosition);
+      window.removeEventListener('activateClickBox', this.updateTooltipPosition);
       window.removeEventListener('click', this.inFocus);
       // this.setState({
       //   listenerActive: false

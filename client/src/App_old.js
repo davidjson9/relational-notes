@@ -8,11 +8,14 @@ class App extends React.Component {
     isMouseTooltipVisible: false,
   };
 
-  toggleMouseTooltip = () => {
+  disableMouseTooltip = () => {
     // the first argument is always going to be the previous state
-    this.setState(prevState => ({ isMouseTooltipVisible: !prevState.isMouseTooltipVisible }));
-    var event = new MouseEvent('updatexy');
-    window.dispatchEvent(event);
+    this.setState(prevState => ({ isMouseTooltipVisible: false }));
+  };
+
+  enableMouseTooltip = () => {
+    // the first argument is always going to be the previous state
+    this.setState(prevState => ({ isMouseTooltipVisible: true }));
   };
 
   render() {
@@ -25,7 +28,8 @@ class App extends React.Component {
           visible={this.state.isMouseTooltipVisible}
           offsetX={15}
           offsetY={10}
-          toggleMouseTooltip={this.toggleMouseTooltip}
+          enableMouseTooltip={this.enableMouseTooltip}
+          disableMouseTooltip={this.disableMouseTooltip}
         >
           <form>
             <label>
