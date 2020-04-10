@@ -10,74 +10,28 @@ import {
   convertFromHTML,
   ContentState
 } from 'draft-js';
+import debounce from 'lodash/debounce';
 
-import ConsoleButtons from '../ConsoleButtons';
-import SimpleLog from './SimpleLog.js';
-import MouseTooltip from '../libs/MouseTooltip.js'
-
-const rawContent = {
-  blocks: [
-    {
-      text: (
-        'This is an "immutable" entity: Superman. Deleting any ' +
-        'characters will delete the entire entity. Adding characters ' +
-        'will remove the entity from the range.'
-      ),
-      type: 'unstyled',
-      entityRanges: [
-        {
-          offset: 31,
-          length: 8,
-          key: 'first'
-        }
-      ]
-    }, {
-      text: '',
-      type: 'unstyled'
-    }, {
-      text: (
-        'This is a "mutable" entity: Batman. Characters may be added ' +
-        'and removed.'
-      ),
-      type: 'unstyled',
-    }, {
-      text: '',
-      type: 'unstyled'
-    }, {
-      text: (
-        'This is a "segmented" entity: Green Lantern. Deleting any ' +
-        'characters will delete the current "segment" from the range. ' +
-        'Adding characters will remove the entire entity from the range.'
-      ),
-      type: 'unstyled',
-    }
-  ],
-  entityMap: {
-    first: {
-      type: 'TOKEN',
-      mutability: 'IMMUTABLE'
-    },
-    second: {
-      type: 'TOKEN',
-      mutability: 'MUTABLE'
-    },
-    third: {
-      type: 'TOKEN',
-      mutability: 'SEGMENTED'
-    }
-  }
-};
+import { Button, Card, Accordion } from 'react-bootstrap';
+import { saveCard, fetchTagEntries } from '../API'
+import CreatableSelect from 'react-select/creatable';
 
 export default class EntityEditorExample extends Component {
   constructor(props) {
     super(props);
+
+    const blocks = convertFromRaw({
+      blocks: this.props.savedBlocks,
+      entityMap: this.props.savedEntities
+    });
+
     const decorator = new CompositeDecorator([
       {
         strategy: getEntityStrategy('IMMUTABLE'),
         component: TokenSpan
       }
     ]);
-    const blocks = convertFromRaw(rawContent);
+
     this.state = {
       editorState: EditorState.createWithContent(blocks, decorator),
       addEntityInputs: {
@@ -85,10 +39,63 @@ export default class EntityEditorExample extends Component {
         mutability: 'IMMUTABLE',
         data: '',
       },
+      id: this.props.id,
       savedBlocks: [],
       savedEntities: {},
       isMouseTooltipVisible: false,
+      isLoading: false,
+      tags: this.props.savedTags
+
     };
+
+    this.handleAddTag = (newValue, actionMeta) => {
+      console.group('Value Changed');
+      console.log(newValue);
+      console.log(`action: ${actionMeta.action}`);
+      console.groupEnd();
+
+      if (actionMeta.action == "create-option") {
+        var newTag = newValue[newValue.length - 1].label;
+        this.props.addTag(newTag);
+      }
+
+      // const tags = newValue.map(tagObj => tagObj.label);
+      const tags = newValue;
+      this.setState({
+        tags
+      });
+
+      console.log(tags);
+      this.saveCard();
+
+
+    }
+
+    this.setLoading = (isLoading) => {
+      this.setState({
+        isLoading
+      });
+    }
+
+    this.saveCard = debounce(async () => {
+      try {
+        this.setLoading(true);
+        const contentState = convertToRaw(this.state.editorState.getCurrentContent())
+        // data.rawContent = contentState;
+        // console.log(JSON.stringify(contentState));
+        const data = {
+          // contentBlocks: [],
+          id: this.state.id,
+          tags: this.state.tags,
+          rawContent: JSON.stringify(contentState),
+        }
+        const response = await saveCard(data);
+        this.setLoading(false);
+      } catch (error) {
+        console.log(error);
+        this.setLoading(false);
+      }
+    }, 1000)
 
     this.setSavedBlocks = (savedBlocks) => {
       this.setState({
@@ -104,32 +111,36 @@ export default class EntityEditorExample extends Component {
 
     this.focus = () => this.refs.editor.focus();
     this.onChange = (editorState) => {
+      if (editorState.getCurrentContent() !== this.state.editorState.getCurrentContent()) {
+        this.saveCard();
+
+      }
+
       this.setState(
         { editorState },
         () => this.getEntityAtSelection(this.state.editorState),
       );
 
-      var selectionState = editorState.getSelection();
-      var startKey = selectionState.getStartKey();
-      var endKey = selectionState.getEndKey();
-      var anchorKey = selectionState.getAnchorKey();
-      var currentContent = editorState.getCurrentContent();
-      var currentContentBlock = currentContent.getBlockForKey(anchorKey);
-      var start = selectionState.getStartOffset();
-      var end = selectionState.getEndOffset();
-      var selectedText = currentContentBlock.getText().slice(start, end);
-      console.log(start, end, startKey, endKey);
+      // var selectionState = editorState.getSelection();
+      // var startKey = selectionState.getStartKey();
+      // var endKey = selectionState.getEndKey();
+      // var anchorKey = selectionState.getAnchorKey();
+      // var currentContent = editorState.getCurrentContent();
+      // var currentContentBlock = currentContent.getBlockForKey(anchorKey);
+      // var start = selectionState.getStartOffset();
+      // var end = selectionState.getEndOffset();
+      // var selectedText = currentContentBlock.getText().slice(start, end);
+      // console.log(start, end, startKey, endKey);
 
-      console.log(startKey, endKey, startKey == endKey);
+      // console.log(startKey, endKey, startKey == endKey);
 
-      if (startKey !== endKey || Math.abs(end - start) > 0) {
-        console.log("selection found!");
-        var event = new MouseEvent('activateClickBox');
-        console.log(event);
-        window.dispatchEvent(event);
-      }
+      // if (startKey !== endKey || Math.abs(end - start) > 0) {
+      //   console.log("selection found!");
+      //   var event = new MouseEvent('activateClickBox');
+      //   console.log(event);
+      //   window.dispatchEvent(event);
+      // }
     }
-
 
     this.logContentState = () => {
       const content = this.state.editorState.getCurrentContent();
@@ -154,6 +165,7 @@ export default class EntityEditorExample extends Component {
 
       //this.props.consoleLog(JSON.stringify(convertToRaw(content), null, 4));
     };
+
     this.setEntityButtonHandler = () => this.setEntityAtSelection(this.state.addEntityInputs);
     this.handleKeyCommand = (command) => this._handleKeyCommand(command);
 
@@ -168,6 +180,7 @@ export default class EntityEditorExample extends Component {
       console.log("should be true now");
 
     };
+
   }
 
   _handleKeyCommand(command) {
@@ -235,9 +248,23 @@ export default class EntityEditorExample extends Component {
   }
 
   render() {
+    var rawContent = {
+      blocks: this.props.savedBlocks,
+      entityMap: this.props.savedEntities
+    }
+
+    const decorator = new CompositeDecorator([
+      {
+        strategy: getEntityStrategy('IMMUTABLE'),
+        component: TokenSpan
+      }
+    ]);
+
+    var editorState = EditorState.createWithContent(convertFromRaw(rawContent), decorator);
+    console.log("PROPS", this.props.savedTags);
     return (
-      <div>
-        <MouseTooltip
+      <>
+        {/* <MouseTooltip
           visible={this.state.isMouseTooltipVisible}
           offsetX={15}
           offsetY={10}
@@ -251,8 +278,8 @@ export default class EntityEditorExample extends Component {
             </label>
             <input type="submit" value="Submit" />
           </form>
-        </MouseTooltip>
-        <ConsoleButtons
+        </MouseTooltip> */}
+        {/* <ConsoleButtons
           buttons={[
             {
               onClick: this.logRawContentState,
@@ -263,29 +290,82 @@ export default class EntityEditorExample extends Component {
               text: "Add Tag"
             },
           ]}
-        />
-        {/* <NewEntityInputs
-					setAddEntityInputs={this.setAddEntityInputs}
-					addEntityInputs={this.state.addEntityInputs}
-				/> */}
-        <div style={styles.editor} onClick={this.focus}>
-          <Editor
-            editorState={this.state.editorState}
-            onChange={this.onChange}
-            handleKeyCommand={this.handleKeyCommand}
-            placeholder="Enter some text..."
-            ref="editor"
-          />
-        </div>
-        {/*  make this into a .map function, look at travel log App.js, line 50 */}
-        <hr></hr>
-        <SimpleLog
-          savedBlocks={this.state.savedBlocks}
-          savedEntities={this.state.savedEntities}
-        />
+        /> */}
+
+        <Accordion
+          defaultActiveKey="0">
+          <Card
+            className="bs-example"
+            style={{ width: '40rem', backgroundColor: '#1E1E1E', borderRadius: '10px', overflow: "visible" }}
+          >
+            <Card.Header
+              style={{ paddingTop: 0, paddingBottom: 5, paddingLeft: 10 }}
+            >
+              <Accordion.Toggle as={Button} eventKey="0"
+                className="text-left"
+                style={{ width: "75vh", fontSize: 12, fontFamily: "HelveticaNeue-Light", backgroundColor: "transparent", borderColor: "transparent", color: 'rgba(184, 184, 184, 0.75)', paddingTop: 5, paddingBottom: 5 }}
+              >
+                {this.props.date}
+              </Accordion.Toggle>
+            </Card.Header>
+            <Accordion.Collapse eventKey="0">
+              <>
+                <Card.Body
+                  style={{ paddingTop: 10 }}
+                >
+                  <div style={styles.editor} onClick={this.focus}>
+                    <Editor
+                      // customStyleMap={styles}
+                      editorState={this.state.editorState}
+                      onChange={this.onChange}
+                      handleKeyCommand={this.handleKeyCommand}
+                      ref="editor"
+                      readOnly={this.props.readOnly}
+                    />
+                  </div>
+                </Card.Body>
+
+                {/* <div class="text-center">
+                  <Button
+                    variant="primary"
+                    disabled={this.state.isLoading}
+                    onClick={!this.state.isLoading ? this.Save : null}
+                    style={{ backgroundColor: "transparent", borderColor: "transparent" }}
+                  >
+                    {this.state.isLoading ? 'Saving..' : 'Save'}
+                  </Button>
+
+                </div> */}
+                <CreatableSelect
+                  isMulti
+                  onChange={this.handleAddTag}
+                  options={
+                    this.props.tags
+                  }
+                  defaultValue={this.props.savedTags}
+                // styles={{
+                //   singleValue: base => ({ ...base, color: 'white' }),
+                //   valueContainer: base => ({
+                //     ...base,
+                //     background: '#1E1E1E',
+                //     color: 'white',
+                //     width: '100%',
+                //   }),
+                // }}
+                />
 
 
-      </div>
+
+              </>
+            </Accordion.Collapse>
+          </Card>
+
+
+
+
+        </Accordion>
+      </>
+
     );
   }
 }
@@ -326,14 +406,13 @@ const TokenSpan = (props) => {
 
 const styles = {
   editor: {
-    // border: '1px solid #ccc',
     cursor: 'text',
     minHeight: 80,
-    padding: 10
-  },
-  button: {
-    marginTop: 10,
-    textAlign: 'center'
+    padding: 0,
+    fontSize: 12,
+    lineHeight: "140%",
+    fontFamily: "Helvetica Neue",
+    color: "#E0E1E2"
   },
   immutable: {
     backgroundColor: 'rgba(191, 63, 63, 0.2)',
