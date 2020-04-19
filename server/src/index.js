@@ -7,6 +7,7 @@ require('dotenv').config();
 var mongoose = require('mongoose');
 mongoose.connect(process.env.DATABASE_URL, { useNewUrlParser: true });
 const cards = require('./api/cards.js');
+const tags = require('./api/tags.js');
 
 // middlewares / error handling later
 // log api later
@@ -19,6 +20,7 @@ app.use(cors({
 }));
 
 app.use('/api/cards', cards);
+app.use('/api/tags', tags);
 
 const port = process.env.PORT || 1337;
 

@@ -1,11 +1,9 @@
 const mongoose = require('mongoose');
 
 const cardSchema = new mongoose.Schema({
-  title: String,
-  author: String,
-  body: String,
-  tagged: [{ tag: String }],
-  taggedNotes: [{ tag: String, body: String }],
+  // contentBlocks: [{ tags: [], raw: String }],
+  rawContent: String,
+  tags: [],
   date: { type: Date, default: Date.now },
 });
 

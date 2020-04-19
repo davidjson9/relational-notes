@@ -13,13 +13,10 @@ svg, #tag-line{
 }
 
 .Card-container {
-  /* background-color: white; */
   padding-left: 0.5rem;
   padding-right: 0.5rem;
   min-width: 19rem;
   max-width: 40rem;
-  /* margin-left: 0px; */
-  /* margin-right: 0px; */
   width: 100%;
 }
 
@@ -33,9 +30,10 @@ svg, #tag-line{
 }
 
 .Search-bar {
-  max-width: 40rem;
   padding-left: 0.5rem;
   padding-right: 0.5rem;
+  min-width: 19rem;
+  max-width: 40rem;
   padding-top: 2rem;
   padding-bottom: 2rem;
   width: 100%;

@@ -7,15 +7,16 @@ import {
   EditorState,
 } from 'draft-js';
 import debounce from 'lodash/debounce';
-import chroma from 'chroma-js';
+import { colors } from './colors.js'
 
 import { Button, Card, Accordion, Row, Col } from 'react-bootstrap';
 import { saveCard, deleteCard, saveTag } from '../API'
 import CreatableSelect from 'react-select/creatable';
 
 import './editor.css';
+import { styles } from './styles.js';
 
-const colors = ["red", "blue", "green", "pink", "orange", "purple"];
+// const colors = ["red", "blue", "green", "pink", "orange", "purple"];
 
 export default class EntityEditorExample extends Component {
   constructor(props) {
@@ -26,6 +27,9 @@ export default class EntityEditorExample extends Component {
       entityMap: this.props.savedEntities || {},
     });
 
+    const randomColor = () => {
+      return colors[Math.floor(Math.random() * colors.length)];
+    }
 
     this.state = {
       editorState: EditorState.createWithContent(blocks),
@@ -35,7 +39,7 @@ export default class EntityEditorExample extends Component {
       deleted: false,
       isMouseTooltipVisible: false,
       isLoading: false,
-      curColor: "red",
+      curColor: randomColor(),
     };
 
     this.setSavedBlocks = (savedBlocks) => {
@@ -50,14 +54,11 @@ export default class EntityEditorExample extends Component {
       if (editorState.getCurrentContent() !== this.state.editorState.getCurrentContent()) {
         this.saveCard();
       }
-      this.setState(
-        { editorState },
-        () => this.getEntityAtSelection(this.state.editorState),
-      );
+      this.setState({ editorState });
     }
 
     this.setNewColor = () => {
-      const curColor = colors[Math.floor(Math.random() * colors.length)];
+      const curColor = randomColor();
       this.setState({ curColor });
     }
 
@@ -107,8 +108,10 @@ export default class EntityEditorExample extends Component {
           rawContent: JSON.stringify(contentState),
         }
         const response = await saveCard(data);
-        console.log(response);
-
+        if (response._id) {
+          const id = response._id;
+          this.setState({ id });
+        }
       } catch (error) {
         console.log(error);
       }
@@ -126,6 +129,8 @@ export default class EntityEditorExample extends Component {
     }
 
     this.handleKeyCommand = (command) => this._handleKeyCommand(command);
+    this.setDomEditorRef = ref => this.domEditor = ref;
+    this.focus = () => this.domEditor.focus();
   }
 
   _handleKeyCommand(command) {
@@ -174,14 +179,13 @@ export default class EntityEditorExample extends Component {
             </Card.Header>
             <Accordion.Collapse eventKey="0">
               <>
-                <Card.Body style={{ paddingTop: 10 }}>
-                  <div style={styles.editor} onClick={this.focus}>
+                <Card.Body style={{ paddingTop: 10 }} onClick={this.focus}>
+                  <div style={styles.editor}>
                     <Editor
                       editorState={this.state.editorState}
                       onChange={this.onChange}
                       handleKeyCommand={this.handleKeyCommand}
-                      ref="editor"
-                      readOnly={this.props.readOnly ? true : false}
+                      ref={this.setDomEditorRef}
                     />
                   </div>
                 </Card.Body>
@@ -219,109 +223,3 @@ export default class EntityEditorExample extends Component {
 
   }
 }
-
-const styles = {
-  editor: {
-    cursor: 'text',
-    minHeight: 80,
-    padding: 0,
-    fontSize: 14,
-    lineHeight: "140%",
-    fontFamily: "Helvetica Neue",
-    color: "#E0E1E2"
-  },
-  card: {
-    // width: '100%',
-    backgroundColor: '#1E1E1E',
-    borderRadius: '10px',
-    overflow: "visible",
-  },
-  cardHeader: {
-    paddingTop: 0,
-    paddingBottom: 5,
-    paddingLeft: 10,
-  },
-  cardHeaderText: {
-    width: "100%",
-    fontSize: 14,
-    fontFamily: "HelveticaNeue-Light",
-    backgroundColor: "transparent",
-    borderColor: "transparent",
-    color: 'rgba(184, 184, 184, 0.75)',
-    paddingTop: 10,
-    paddingBottom: 5,
-    paddingLeft: 10,
-  },
-  multiSelectDark: {
-    control: (base, state) => ({
-      ...base,
-      background: "#1e1e1e",
-      boxShadow: state.isFocused ? null : null,
-      borderColor: state.isFocused
-        ? '#1e1e1e'
-        : '#1e1e1e',
-      '&:hover': {
-        borderColor: state.isFocused
-          ? '#1e1e1e'
-          : '#1e1e1e',
-        background: "#363636",
-      }
-    }),
-
-
-    // option: (styles, { data, isDisabled, isFocused, isSelected }) => {
-    //   const color = chroma(data.color);
-    //   return {
-    //     ...styles,
-    //     backgroundColor: isDisabled
-    //       ? null
-    //       : isSelected
-    //         ? data.color
-    //         : isFocused
-    //           ? color.alpha(0.1).css()
-    //           : null,
-    //     color: isDisabled
-    //       ? '#ccc'
-    //       : isSelected
-    //         ? chroma.contrast(color, 'white') > 2
-    //           ? 'white'
-    //           : 'black'
-    //         : data.color,
-    //     cursor: isDisabled ? 'not-allowed' : 'default',
-
-    //     ':active': {
-    //       ...styles[':active'],
-    //       backgroundColor: !isDisabled && (isSelected ? data.color : color.alpha(0.3).css()),
-    //     },
-    //   };
-    // },
-    // multiValue: (styles, { data }) => {
-    //   console.log("data", data);
-    //   const color = chroma(data.color);
-    //   return {
-    //     ...styles,
-    //     backgroundColor: color.alpha(0.1).css(),
-    //   };
-    // },
-
-    // multiValueLabel: (styles, { data }) => ({
-    //   ...styles,
-    //   color: data.color,
-    // }),
-
-    // multiValueRemove: (styles, { data }) => ({
-    //   ...styles,
-    //   color: data.color,
-    //   ':hover': {
-    //     backgroundColor: data.color,
-    //     color: 'white',
-    //   },
-    // }),
-
-
-
-    // multiValueLabel: base => ({ ...base, color: 'purple', }),
-    // multiValue: base => ({ ...base, color: 'purple', }),
-    input: base => ({ ...base, color: '#E0E1E2', }),
-  },
-};

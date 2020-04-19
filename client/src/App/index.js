@@ -4,6 +4,7 @@ import { fetchCardEntries, fetchCardEntriesForSearch, fetchTagEntries } from '..
 
 import 'bootstrap/dist/css/bootstrap.css';
 import './index.css';
+import { styles } from './styles.js';
 
 import Select from 'react-select';
 
@@ -30,6 +31,13 @@ const App = () => {
     }
   }
 
+  const handleTagChange = (newValues, actionMeta) => {
+    console.group('Value Changed');
+    console.log("handleTagChange:", tags);
+    console.log(`action: ${actionMeta.action}`);
+    console.groupEnd();
+  }
+
   const getTags = async () => {
     try {
       const cardTags = await fetchTagEntries();
@@ -47,81 +55,66 @@ const App = () => {
   return (
     <div className="App">
       <header className="App-header">
-        <div>
-          <div className="Search-bar">
-            <Select
-              isMulti
-              isClearable
-              components={{ DropdownIndicator: null, }}
-              placeholder="Search"
-              // onChange={this.handleTagChange}
-              options={tags}
-              // defaultValue={this.props.savedTags}
-              styles={{
-                control: (base, state) => ({
-                  ...base,
-                  fontSize: "26px",
-                  background: "#1e1e1e",
-                  boxShadow: state.isFocused ? null : null,
-                  borderColor: state.isFocused
-                    ? '#1e1e1e'
-                    : '#1e1e1e',
-                  '&:hover': {
-                    borderColor: state.isFocused
-                      ? '#1e1e1e'
-                      : '#1e1e1e',
-                    background: "#363636",
-                  }
-                }),
-                option: (base, state) => ({
-                  ...base,
-                  // fontSize: "26px",
-                }),
-              }}
-            />
-          </div>
-
-          <div className="Card-container">
-            {
-              console.log("tags", tags)
+        <div className="Search-bar">
+          <Select
+            isMulti
+            isClearable
+            components={{ DropdownIndicator: null, }}
+            placeholder="Search"
+            onChange={handleTagChange}
+            options={tags}
+            styles={
+              styles.multiSelectDark
+              // {
+              //   // control: (base, state) => ({
+              //   //   ...base,
+              //   //   fontSize: "26px",
+              //   // }),
+              // }
             }
-            <Editor
-              id={""}
-              date={new Date().toDateString()}
-              tags={tags}
-              getTags={getTags}
-            />\
-          </div>
-
-          {
-            cardEntries.map(card => {
-              var raw_date = new Date(card.date)
-              var date = raw_date.toDateString()
-              var data = JSON.parse(card.rawContent)
-              console.log("card.tags");
-              console.log(card.tags);
-              const defaultValue = card.tags.map(e => e);
-              console.log("defaultValue", defaultValue);
-
-              return (
-
-                <div key={card._id} className="Card-container">
-                  <Editor
-                    id={card._id}
-                    date={date}
-                    savedBlocks={data.blocks}
-                    savedEntities={data.entityMap}
-                    allTags={tags}
-                    defaultValue={defaultValue}
-                    deletable={true}
-                    getTags={getTags}
-                  />
-                </div>
-              )
-            })
-          }
-
+          />
         </div>
+
+        <div className="Card-container">
+          {
+            console.log("tags", tags)
+          }
+          <Editor
+            id={""}
+            date={new Date().toDateString()}
+            allTags={tags}
+            getTags={getTags}
+          />
+        </div>
+
+        {
+          cardEntries.map(card => {
+            var raw_date = new Date(card.date)
+            var date = raw_date.toDateString()
+            var data = JSON.parse(card.rawContent)
+            console.log("card.tags");
+            console.log(card.tags);
+            const defaultValue = (card.tags) ? card.tags.map(e => e) : [];
+            console.log("defaultValue", defaultValue);
+
+            return (
+
+              <div key={card._id} className="Card-container">
+                <Editor
+                  id={card._id}
+                  date={date}
+                  savedBlocks={data.blocks}
+                  savedEntities={data.entityMap}
+                  allTags={tags}
+                  defaultValue={defaultValue}
+                  deletable={true}
+                  getTags={getTags}
+                />
+              </div>
+            )
+          })
+        }
+
       </header>
     </div>
   );
