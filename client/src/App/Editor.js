@@ -2,19 +2,16 @@ import React, { Component } from 'react';
 import {
   convertFromRaw,
   convertToRaw,
-  CompositeDecorator,
   RichUtils,
   Editor,
   EditorState,
-  Modifier,
 } from 'draft-js';
 import debounce from 'lodash/debounce';
 import chroma from 'chroma-js';
 
-import { Button, Card, Accordion, Container, Row, Col } from 'react-bootstrap';
+import { Button, Card, Accordion, Row, Col } from 'react-bootstrap';
 import { saveCard, deleteCard, saveTag } from '../API'
 import CreatableSelect from 'react-select/creatable';
-import { components } from 'react-select';
 
 import './editor.css';
 
@@ -29,22 +26,9 @@ export default class EntityEditorExample extends Component {
       entityMap: this.props.savedEntities || {},
     });
 
-    const decorator = new CompositeDecorator([
-      {
-        strategy: getEntityStrategy('IMMUTABLE'),
-        component: TokenSpan
-      }
-    ]);
-
-    const defaultValue = this.props.cardTagLabels;
 
     this.state = {
-      editorState: EditorState.createWithContent(blocks, decorator),
-      addEntityInputs: {
-        type: 'TOKEN',
-        mutability: 'IMMUTABLE',
-        data: '',
-      },
+      editorState: EditorState.createWithContent(blocks),
       id: this.props.id,
       savedBlocks: [],
       savedEntities: {},
@@ -142,19 +126,6 @@ export default class EntityEditorExample extends Component {
     }
 
     this.handleKeyCommand = (command) => this._handleKeyCommand(command);
-
-    this.disableMouseTooltip = () => {
-      // the first argument is always going to be the previous state
-      this.setState({ isMouseTooltipVisible: false });
-    };
-
-    this.enableMouseTooltip = () => {
-      // the first argument is always going to be the previous state
-      this.setState({ isMouseTooltipVisible: true });
-      console.log("should be true now");
-
-    };
-
   }
 
   _handleKeyCommand(command) {
@@ -167,69 +138,7 @@ export default class EntityEditorExample extends Component {
     return false;
   }
 
-  setEntityAtSelection = ({ type, mutability, data }) => {
-    const editorState = this.state.editorState;
-    const contentstate = editorState.getCurrentContent();
-
-    // Returns ContentState record updated to include the newly created DraftEntity record in it's EntityMap.
-    let newContentState = contentstate.createEntity(type, mutability, { url: data });
-
-    // Call getLastCreatedEntityKey to get the key of the newly created DraftEntity record.
-    const entityKey = contentstate.getLastCreatedEntityKey();
-
-    // Get the current selection
-    const selectionState = this.state.editorState.getSelection();
-
-    // Add the created entity to the current selection, for a new contentState
-    newContentState = Modifier.applyEntity(
-      newContentState,
-      selectionState,
-      entityKey
-    );
-
-    // Add newContentState to the existing editorState, for a new editorState
-    const newEditorState = EditorState.push(
-      this.state.editorState,
-      newContentState,
-      'apply-entity'
-    );
-
-    this.onChange(newEditorState);
-  }
-
-  getEntityAtSelection = (editorState) => {
-    const selectionState = editorState.getSelection();
-    const selectionKey = selectionState.getStartKey();
-    const contentstate = editorState.getCurrentContent();
-
-    // The block in which the selection starts
-    const block = contentstate.getBlockForKey(selectionKey);
-
-    // Entity key at the start selection
-    const entityKey = block.getEntityAt(selectionState.getStartOffset());
-    if (entityKey) {
-      // The actual entity instance
-      const entityInstance = contentstate.getEntity(entityKey);
-      const entityInfo = {
-        type: entityInstance.getType(),
-        mutability: entityInstance.getMutability(),
-        data: entityInstance.getData(),
-      }
-      // this.props.consoleLog(JSON.stringify(entityInfo, null, 4));
-    } else {
-      // this.props.consoleLog("No entity present at current selection!");
-    }
-  }
-
   render() {
-    const IndicatorsContainer = props => {
-      return (
-        <div style={{ background: "#1E1E1E" }}>
-          <components.IndicatorsContainer {...props} />
-        </div>
-      );
-    };
-
     if (!this.state.deleted) {
       return (
         <Accordion
@@ -310,40 +219,6 @@ export default class EntityEditorExample extends Component {
 
   }
 }
-
-function getEntityStrategy(mutability) {
-  return function (contentBlock, callback, contentState) {
-    contentBlock.findEntityRanges((character) => {
-      const entityKey = character.getEntity();
-      if (entityKey === null) {
-        return false;
-      }
-      return contentState.getEntity(entityKey).getMutability() === mutability;
-    }, callback);
-  };
-}
-
-function getDecoratedStyle(mutability) {
-  switch (mutability) {
-    case 'IMMUTABLE':
-      return styles.immutable;
-    case 'MUTABLE':
-      return styles.mutable;
-    case 'SEGMENTED':
-      return styles.segmented;
-    default:
-      return null;
-  }
-}
-
-const TokenSpan = (props) => {
-  const style = getDecoratedStyle(props.contentState.getEntity(props.entityKey).getMutability());
-  return (
-    <span data-offset-key={props.offsetkey} style={style}>
-      {props.children}
-    </span>
-  );
-};
 
 const styles = {
   editor: {
@@ -449,16 +324,4 @@ const styles = {
     // multiValue: base => ({ ...base, color: 'purple', }),
     input: base => ({ ...base, color: '#E0E1E2', }),
   },
-  immutable: {
-    backgroundColor: 'rgba(191, 63, 63, 0.2)',
-    padding: '2px 0'
-  },
-  mutable: {
-    backgroundColor: 'rgba(204, 204, 255, 1.0)',
-    padding: '2px 0'
-  },
-  segmented: {
-    backgroundColor: 'rgba(248, 222, 126, 1.0)',
-    padding: '2px 0'
-  }
 };
