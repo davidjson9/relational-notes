@@ -6,6 +6,19 @@ export async function fetchCardEntries() {
   return response.json();
 }
 
+export async function deleteCard(data) {
+  console.log(data)
+
+  const response = await fetch(`${API_URL}/api/cards/delete`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify(data)
+  });
+  return response.json();
+}
+
 export async function saveCard(data) {
   console.log(data);
 
@@ -17,6 +30,11 @@ export async function saveCard(data) {
     body: JSON.stringify(data),
   });
   return response.json();
+}
+
+export async function fetchCardEntriesForSearch(terms) {
+  const response = await fetch(`${API_URL}/api/tags`);
+  return response.json()
 }
 
 export async function fetchTagEntries() {

@@ -1,65 +1,41 @@
-import React, { Component, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Editor from './Editor';
-import { fetchCardEntries, saveCard, fetchTagEntries, saveTag } from '../API';
-import { Form } from 'react-bootstrap';
+import { fetchCardEntries, fetchCardEntriesForSearch, fetchTagEntries } from '../API';
+import { Container } from 'react-bootstrap';
 
-
-// Import styles
 import 'bootstrap/dist/css/bootstrap.css';
 import './index.css';
 
-const blocks = [
-  {
-    text: (
-      'This is an "immutable" entity: Superman. Deleting any ' +
-      'characters will delete the entire entity. Adding characters ' +
-      'will remove the entity from the range.'
-    ),
-    type: 'unstyled',
-    entityRanges: [
-      {
-        offset: 31,
-        length: 8,
-        key: 'first'
-      }
-    ]
-  }, {
-    text: '',
-    type: 'unstyled'
-  }, {
-    text: (
-      'This is a "mutable" entity: Batman. Characters may be added ' +
-      'and removed.'
-    ),
-    type: 'unstyled',
-  }, {
-    text: '',
-    type: 'unstyled'
-  }, {
-    text: (
-      'This is a "segmented" entity: Green Lantern. Deleting any ' +
-      'characters will delete the current "segment" from the range. ' +
-      'Adding characters will remove the entire entity from the range.'
-    ),
-    type: 'unstyled',
-  }
-]
-const entities = {
-  entityMap: {
-    first: {
-      type: 'TOKEN',
-      mutability: 'IMMUTABLE'
-    },
-    second: {
-      type: 'TOKEN',
-      mutability: 'MUTABLE'
-    },
-    third: {
-      type: 'TOKEN',
-      mutability: 'SEGMENTED'
-    }
-  }
-}
+import Select from 'react-select';
+
+import { colourOptions, groupedOptions } from './data';
+
+// demo code
+
+const groupStyles = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+};
+const groupBadgeStyles = {
+  backgroundColor: '#EBECF0',
+  borderRadius: '2em',
+  color: '#172B4D',
+  display: 'inline-block',
+  fontSize: 12,
+  fontWeight: 'normal',
+  lineHeight: '1',
+  minWidth: 1,
+  padding: '0.16666666666667em 0.5em',
+  textAlign: 'center',
+};
+
+const formatGroupLabel = data => (
+  <div style={groupStyles}>
+    <span>{data.label}</span>
+    <span style={groupBadgeStyles}>{data.options.length}</span>
+  </div>
+);
 
 const App = () => {
   const [cardEntries, setCardEntries] = useState([]);
@@ -71,8 +47,15 @@ const App = () => {
     console.log(cardEntries);
   }
 
+  const getCardEntriesForSearch = async (terms) => {
+    console.log(terms);
+    const cardEntries = await fetchCardEntriesForSearch(terms);
+    setCardEntries(cardEntries);
+    console.log(cardEntries);
+  }
+
   const handleKeyPress = (target) => {
-    if (target.charCode == 13) {
+    if (target.charCode === 13) {
       console.log("success!");
     }
   }
@@ -83,33 +66,8 @@ const App = () => {
 
   const getTags = async () => {
     try {
-      const tagObjects = await fetchTagEntries();
-      var tags = []
-
-      tagObjects.forEach(element => {
-        tags.push({
-          value: element.tag,
-          label: element.tag,
-        });
-      });
-
-      setTags(tags);
-      console.log(tags);
-    } catch (error) {
-      console.log(error);
-    }
-  }
-
-  const addTag = async (tag) => {
-    try {
-      // console.log("WHAT TAG?", tag);
-      const data = {
-        tag: tag
-      }
-      console.log("DATA", data);
-      const response = await saveTag(data);
-      getTags();
-      console.log(response);
+      const cardTags = await fetchTagEntries();
+      setTags(cardTags);
     } catch (error) {
       console.log(error);
     }
@@ -118,72 +76,128 @@ const App = () => {
   useEffect(() => {
     getCardEntries();
     getTags();
-    // addTag("Buddhism");
   }, [])
-
-
 
   return (
     <div className="App">
       <header className="App-header">
-
-        <div className="Search-bar">
-          <Form.Group>
-            <Form.Control size="lg" type="text" placeholder="Search" onKeyPress={handleKeyPress} onChange={handleOnChange} />
-          </Form.Group>
-        </div>
-
         <div>
-          <Editor
-            id={""}
-            date={new Date().toDateString()}
-            savedBlocks={[]}
-            savedEntities={{}}
-            savedTags={[]}
-            readOnly={false}
-            updateEntries={getCardEntries}
-            tags={tags}
-            addTag={addTag}
-          // saveCard={this.saveCard}
-          >
-          </Editor>
-        </div>
+          <div className="Search-bar">
+            <Select
+              isMulti
+              isClearable
+              // defaultValue={colourOptions[1]}
+              options={groupedOptions}
+              formatGroupLabel={formatGroupLabel}
+              components={{ DropdownIndicator: null, }}
+              placeholder="Search"
+              // onChange={this.handleTagChange}
+              options={tags}
+              // defaultValue={this.props.savedTags}
+              theme={(theme) => ({
+                ...theme,
+                borderRadius: 5,
+                colors: {
+                  ...theme.colors,
+                  // text: 'pink',
+                  // neutral0: '1e1e1e',
+                  // neutral20: '1e1e1e',
+                  // neutral30: '1e1e1e',
+
+                  // neutral50: 'white',
+                  // neutral80: 'white',
+
+                  // // primary25: 'pink',
+                  // primary50: '1e1e1e',
+                  // primary75: '1e1e1e',
+                  // primary: '1e1e1e',
+                },
+              })}
+              styles={{
+
+                control: (base, state) => ({
+                  ...base,
+                  fontSize: "26px",
 
 
-        <hr></hr>
-        {
+                  background: "#1e1e1e",
+                  boxShadow: state.isFocused ? null : null,
+                  borderColor: state.isFocused
+                    ? '#1e1e1e'
+                    : '#1e1e1e',
+                  '&:hover': {
+                    borderColor: state.isFocused
+                      ? '#1e1e1e'
+                      : '#1e1e1e',
+                    background: "#363636",
+                    // color: "pink"
+                  }
+                }),
+                option: (base, state) => ({
+                  ...base,
+                  // fontSize: "26px",
+                }),
+                multiValueLabel: base => ({ ...base, color: 'purple', }),
+                multiValue: base => ({ ...base, color: 'purple', }),
+                input: base => ({ ...base, color: '#E0E1E2' }),
+                placeholder: base => ({ ...base, alignItems: 'center' }),
 
-          cardEntries.map(card => {
-            var raw_date = new Date(card.date)
-            var date = raw_date.toDateString()
-            var data = JSON.parse(card.rawContent)
-            var savedTags = card.tags
-            console.log(data);
-            console.log(tags);
+                // valueContainer: base => ({
+                //   ...base,
+                //   background: '#1E1E1E',
+                //   color: 'pink',
+                //   width: '100%',
+                // }),
+              }}
 
-            return (
-              <>
-                <div key={card._id}>
+            />
+          </div>
+
+
+
+
+
+          <div className="Card-container">
+            {
+              console.log("tags", tags)
+            }
+            <Editor
+              id={""}
+              date={new Date().toDateString()}
+              tags={tags}
+              getTags={getTags}
+            />\
+          </div>
+
+          {
+            cardEntries.map(card => {
+              var raw_date = new Date(card.date)
+              var date = raw_date.toDateString()
+              var data = JSON.parse(card.rawContent)
+              console.log("card.tags");
+              console.log(card.tags);
+              const defaultValue = card.tags.map(e => e);
+              console.log("defaultValue", defaultValue);
+
+              return (
+
+                <div key={card._id} className="Card-container">
                   <Editor
                     id={card._id}
                     date={date}
                     savedBlocks={data.blocks}
                     savedEntities={data.entityMap}
-                    savedTags={savedTags}
-                    readOnly={false}
-                    updateEntries={getCardEntries}
-                    tags={tags}
-                    addTag={addTag}
-                  // saveCard={this.saveCard}
-                  >
-                  </Editor>
+                    allTags={tags}
+                    defaultValue={defaultValue}
+                    deletable={true}
+                    getTags={getTags}
+                  />
                 </div>
-                <hr></hr>
-              </>
-            )
+              )
+            })
           }
-          )
-        }
+
+        </div>
       </header>
     </div>
   );
