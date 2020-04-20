@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "name": "relational-notes-api",
+  "builds": [
+    {
+      "src": "src/index.js",
+      "use": "@now/node-server"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/.*",
+      "dest": "src/index.js"
+    }
+  ],
+  "alias": [
+    "relational-notes-api"
+  ],
+  "env": {
+    "NODE_ENV": "production",
+    "PORT": "1337",
+    "DATABASE_URL": "@cards-db",
+    "CORS_ORIGIN": "https://relational-notes.now.sh"
+  }
+}

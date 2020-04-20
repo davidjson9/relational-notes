@@ -1,4 +1,5 @@
-const API_URL = "http://localhost:1337";
+const API_URL = (window.location.hostname === 'localhost') ? "http://localhost:1337" : 'https://relational-notes-api.now.sh';
+// const API_URL = "https://relational-notes-api.now.sh";
 
 export async function fetchCardEntries() {
   // I guess we don't need to include the GET method?

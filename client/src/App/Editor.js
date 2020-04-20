@@ -115,7 +115,7 @@ export default class EntityEditorExample extends Component {
       } catch (error) {
         console.log(error);
       }
-    }, 1000)
+    }, 400)
 
 
     this.addTag = async (tag, color) => {
