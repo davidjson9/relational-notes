@@ -102,6 +102,7 @@ export default class EntityEditorExample extends Component {
     this.saveCard = debounce(async () => {
       try {
         const contentState = convertToRaw(this.state.editorState.getCurrentContent());
+        console.log("id", this.state.id);
         const data = {
           id: this.state.id,
           tags: this.state.tags,
@@ -144,6 +145,21 @@ export default class EntityEditorExample extends Component {
   }
 
   render() {
+    // console.log("refresh:", this.props.refresh);
+    if (this.props.refresh) {
+      const blocks = convertFromRaw({
+        blocks: [],
+        entityMap: {},
+      });
+
+      this.setState({
+        id: "",
+        editorState: EditorState.createWithContent(blocks),
+      });
+      // this.props.getTags();
+      this.props.setRefresh(false);
+    }
+
     if (!this.state.deleted) {
       return (
         <Accordion

@@ -15,6 +15,13 @@ export const styles = {
     borderRadius: '10px',
     overflow: "visible",
   },
+  cardLight: {
+    // width: '100%',
+    backgroundColor: '#2C3037',
+    borderRadius: '10px',
+    overflow: "visible",
+    width: '100%',
+  },
   cardHeader: {
     paddingTop: 0,
     paddingBottom: 5,

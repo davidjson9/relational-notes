@@ -8,13 +8,21 @@ router.post('/', async (req, res, next) => {
     if (req.body.id) {
       const response = await Card.update({ _id: req.body.id }, req.body);
       res.json(response);
-      return
     } else {
       const newCard = new Card(req.body);
       const response = await newCard.save();
       res.json(response);
-      return
     }
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+router.post('/search', async (req, res, next) => {
+  try {
+    console.log(req.body);
+    const response = await Card.find({ $and: req.body.queryTerms });
+    res.json(response);
   } catch (error) {
     console.log(error);
   }
