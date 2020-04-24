@@ -12,7 +12,7 @@ import Select from 'react-select';
 const App = () => {
   const [cardEntries, setCardEntries] = useState([]);
   const [tags, setTags] = useState([]);
-  const [refresh, setRefresh] = useState([]);
+  const [clearCard, setClearCard] = useState([]);
 
   const getCardEntries = async () => {
     const cardEntries = await fetchCardEntries();
@@ -20,32 +20,31 @@ const App = () => {
     // console.log(cardEntries);
   }
 
-  const getCardEntriesForSearch = async (data) => {
-    // console.log(data);
+  const getCardEntriesForSearch = async (queryArray) => {
+    const data = { queryTerms: queryArray };
     const cardEntries = await fetchCardEntriesForSearch(data);
     setCardEntries(cardEntries);
-    // console.log(cardEntries);
   }
 
-  const handleTagChange = (newValues, actionMeta) => {
+  const handleSearchChange = async (newValues, actionMeta) => {
     console.group('Value Changed');
-    console.log("handleTagChange:", newValues);
+    console.log("handleSearchChange:", newValues);
     console.log(`action: ${actionMeta.action}`);
     console.groupEnd();
-    if (!newValues) {
+    if (!newValues || actionMeta.action === "clear") {
       getCardEntries();
       return
     }
-    const queryTerms = newValues.map(e => ({
-      "tags.label": e.label
-    }));
-    const data = { queryTerms: queryTerms };
-    getCardEntriesForSearch(data);
+    const queryArray = newValues.map(e => {
+      return { "tags.label": e.label }
+    });
+    getCardEntriesForSearch(queryArray);
   }
 
-  const handleAddNew = () => {
-    setRefresh(true);
-    // console.log("refresh_value", refresh);
+  const addNewCard = () => {
+    setClearCard(true);
+    // setBlocks([]);
+    // setEntityMap({});
     getCardEntries();
   }
 
@@ -73,31 +72,20 @@ const App = () => {
             isClearable
             components={{ DropdownIndicator: null, }}
             placeholder="Search"
-            onChange={handleTagChange}
+            onChange={handleSearchChange}
             options={tags}
-            styles={
-              styles.multiSelectDark
-              // {
-              //   // control: (base, state) => ({
-              //   //   ...base,
-              //   //   fontSize: "26px",
-              //   // }),
-              // }
-            }
+            styles={styles.multiSelectDark}
           />
         </div>
 
         <div className="Card-container">
-          {
-            console.log("tags", tags)
-          }
           <Editor
             id={""}
             date={new Date().toDateString()}
             allTags={tags}
             getTags={getTags}
-            refresh={refresh}
-            setRefresh={setRefresh}
+            clearCard={clearCard}
+            setClearCard={setClearCard}
           />
         </div>
 
@@ -105,9 +93,9 @@ const App = () => {
           <Card style={styles.cardLight}>
             <Button
               variant="outline-dark" size="lg"
-              onClick={handleAddNew}
+              onClick={addNewCard}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" color="grey" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" color="grey" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             </Button>
           </Card>
           <hr />
@@ -119,10 +107,7 @@ const App = () => {
             var raw_date = new Date(card.date)
             var date = raw_date.toDateString()
             var data = JSON.parse(card.rawContent)
-            console.log("card.tags");
-            console.log(card.tags);
             const defaultValue = (card.tags) ? card.tags.map(e => e) : [];
-            console.log("defaultValue", defaultValue);
 
             return (
 
