@@ -7,12 +7,14 @@ import './index.css';
 import { Card, Button } from 'react-bootstrap';
 import { styles } from './styles.js';
 
-import Select from 'react-select';
+import CreatableSelect from 'react-select/creatable';
 
 const App = () => {
   const [cardEntries, setCardEntries] = useState([]);
+  const [searchTags, setSearchTags] = useState([]);
   const [tags, setTags] = useState([]);
-  const [clearCard, setClearCard] = useState([]);
+  const [clearCardProp, setClearCardProp] = useState([]);
+  const [curQueryArray, setCurQueryArray] = useState([]);
 
   const getCardEntries = async () => {
     const cardEntries = await fetchCardEntries();
@@ -28,24 +30,64 @@ const App = () => {
 
   const handleSearchChange = async (newValues, actionMeta) => {
     console.group('Value Changed');
-    console.log("handleSearchChange:", newValues);
+    console.log("newValues:", newValues);
     console.log(`action: ${actionMeta.action}`);
     console.groupEnd();
-    if (!newValues || actionMeta.action === "clear") {
-      getCardEntries();
-      return
+
+    const tagTerms = newValues ?
+      newValues.filter(e => {
+        if (e.__isNew__) {
+          return false;
+        }
+        return true;
+      })
+      : []
+    setSearchTags(tagTerms);
+
+    if (actionMeta.action === "create-option") {
+      console.log("rawNewValues", newValues);
+      const newTag = newValues[newValues.length - 1];
+      const formattedNewTag = {
+        ...newTag,
+        color: "white",
+      }
+      newValues[newValues.length - 1] = formattedNewTag; // this is the important part, and I guess all the CSS is loaded afterwards
     }
-    const queryArray = newValues.map(e => {
-      return { "tags.label": e.label }
-    });
-    getCardEntriesForSearch(queryArray);
+
+    if (newValues === null || actionMeta.action === "clear") {
+      setCurQueryArray([]);
+      clearCard();
+      getCardEntries();
+    } else {
+      const queryArray = newValues.map(e => {
+        if (e.__isNew__) {
+          return { "rawText": { "$regex": e.value, "$options": "i" } };
+        } else {
+          return { "tags.label": e.label };
+        }
+      });
+      // console.log("queryArray", queryArray);
+
+      setCurQueryArray(queryArray);
+      clearCard();
+      getCardEntriesForSearch(queryArray);
+    }
+
+
   }
 
-  const addNewCard = () => {
-    setClearCard(true);
-    // setBlocks([]);
-    // setEntityMap({});
-    getCardEntries();
+  const clearCard = () => {
+    setClearCardProp(true);
+  }
+
+  const setNewCard = () => {
+    clearCard();
+    if (curQueryArray.length === 0) {
+      getCardEntries();
+    } else {
+      getCardEntriesForSearch(curQueryArray);
+    }
+
   }
 
   const getTags = async () => {
@@ -67,7 +109,7 @@ const App = () => {
     <div className="App">
       <header className="App-header">
         <div className="Search-bar">
-          <Select
+          <CreatableSelect
             isMulti
             isClearable
             components={{ DropdownIndicator: null, }}
@@ -84,8 +126,9 @@ const App = () => {
             date={new Date().toDateString()}
             allTags={tags}
             getTags={getTags}
-            clearCard={clearCard}
-            setClearCard={setClearCard}
+            defaultValue={searchTags}
+            clearCard={clearCardProp}
+            setClearCard={setClearCardProp}
           />
         </div>
 
@@ -93,7 +136,7 @@ const App = () => {
           <Card style={styles.cardLight}>
             <Button
               variant="outline-dark" size="lg"
-              onClick={addNewCard}
+              onClick={setNewCard}
             >
               <svg xmlns="http://www.w3.org/2000/svg" color="grey" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             </Button>

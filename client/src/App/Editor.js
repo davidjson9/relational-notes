@@ -59,7 +59,7 @@ export default class EntityEditorExample extends Component {
 
     this.handleTagChange = (newValues, actionMeta) => {
       console.group('Value Changed');
-      console.log("handleTagChange:", tags);
+      console.log("handleTagChange:", newValues);
       console.log(`action: ${actionMeta.action}`);
       console.groupEnd();
 
@@ -72,7 +72,7 @@ export default class EntityEditorExample extends Component {
         }
         this.addTag(formattedNewTag);
         this.setNewColor();
-        newValues[newValues.length - 1] = formattedNewTag;
+        newValues[newValues.length - 1] = formattedNewTag; // this is the important part, and I guess all the CSS is loaded afterwards
       }
 
       const tags = newValues;
@@ -99,6 +99,7 @@ export default class EntityEditorExample extends Component {
         const data = {
           id: this.state.id,
           tags: this.state.tags,
+          rawText: this.state.editorState.getCurrentContent().getPlainText(' '),
           rawContent: JSON.stringify(contentState),
         }
         const response = await saveCard(data);
@@ -132,10 +133,18 @@ export default class EntityEditorExample extends Component {
       this.setState({
         id: "",
         editorState: EditorState.createEmpty(),
-        tags: null
+        tags: this.props.defaultValue
       });
       this.props.setClearCard(false);
     }
+
+    // console.log(this.props.defaultValue, prevProps.defaultValue);
+    if (this.props.defaultValue !== prevProps.defaultValue) {
+      this.setState({
+        tags: this.props.defaultValue
+      })
+    }
+
   }
 
   _handleKeyCommand(command) {
