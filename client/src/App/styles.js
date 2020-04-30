@@ -1,4 +1,5 @@
 import chroma from 'chroma-js';
+
 export const styles = {
   editor: {
     cursor: 'text',

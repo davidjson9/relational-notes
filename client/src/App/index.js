@@ -124,6 +124,7 @@ const App = () => {
             isClearable
             components={{ DropdownIndicator: null, }}
             placeholder="Search"
+            formatCreateLabel={userInput => `Text search for '${userInput}'`}
             onChange={handleSearchChange}
             options={tagFilter.size === 0 ? tags : tags.filter(e => tagFilter.has(e.label))}
             styles={styles.multiSelectDark}
