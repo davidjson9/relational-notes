@@ -8,13 +8,18 @@ import {
 } from 'draft-js';
 import debounce from 'lodash/debounce';
 import { colors } from './colors.js'
+import chroma from 'chroma-js';
 
 import { Button, Card, Accordion, Row, Col } from 'react-bootstrap';
 import { saveCard, deleteCard, saveTag, updateTag, deleteTag } from '../API'
 import CreatableSelect from 'react-select/creatable';
 
 import './editor.css';
-import { styles } from './styles.js';
+
+const randomColor = () => {
+  return colors[Math.floor(Math.random() * colors.length)];
+}
+const currentColor = randomColor()
 
 export default class EntityEditorExample extends Component {
   constructor(props) {
@@ -25,15 +30,11 @@ export default class EntityEditorExample extends Component {
       entityMap: this.props.savedEntities || {},
     });
 
-    const randomColor = () => {
-      return colors[Math.floor(Math.random() * colors.length)];
-    }
-
     this.state = {
       editorState: EditorState.createWithContent(blocks),
       id: this.props.id,
       deleted: false,
-      curColor: randomColor(),
+      curColor: currentColor,
       tags: this.props.defaultValue,
     };
 
@@ -64,20 +65,6 @@ export default class EntityEditorExample extends Component {
       console.log(`action: ${actionMeta.action}`);
       console.groupEnd();
 
-      if (actionMeta.action === "create-option") {
-        const newTag = newValues[newValues.length - 1];
-        const formattedNewTag = {
-          label: newTag.label,
-          value: newTag.value,
-          color: this.state.curColor,
-          count: 1,
-        }
-        this.addTag(formattedNewTag);
-        this.setNewColor();
-        newValues[newValues.length - 1] = formattedNewTag; // this is the important part, and I guess all the CSS is loaded afterwards
-      }
-
-      // Handling Tag Count Updates
       const diff = (large, small) => {
         return large.filter(function (obj) {
           return !small.some(function (obj2) {
@@ -85,8 +72,18 @@ export default class EntityEditorExample extends Component {
           });
         });
       }
-
-      if (actionMeta.action === "select-option") {
+      const latestTag = newValues[newValues.length - 1];
+      if (newValues.length > 0 && latestTag.__isNew__) {
+        const newTag = {
+          label: latestTag.value,
+          value: latestTag.value,
+          color: this.state.curColor,
+          count: 1
+        };
+        newValues[newValues.length - 1] = newTag;
+        this.addTag(newTag);
+        this.setNewColor();
+      } else if (actionMeta.action === "select-option") {
         const rawTag = diff(newValues, this.state.tags)[0];
         console.log("rawTagToAdd", rawTag);
         this.incrementTag(rawTag.label);
@@ -100,8 +97,9 @@ export default class EntityEditorExample extends Component {
 
       const tags = newValues;
       this.setState({ tags }, function () {
-        console.log("this.state.tags", this.state.tags);
-        this.saveCard();
+        if (this.state.editorState.getCurrentContent().hasText()) {
+          this.saveCard();
+        }
       });
     }
 
@@ -145,9 +143,11 @@ export default class EntityEditorExample extends Component {
 
     this.addTag = async (tag, color) => {
       try {
-        const response = await saveTag(tag);
-        this.props.getTags();
+        var newTag = tag;
+        newTag.count = 1;
+        const response = await saveTag(newTag);
         console.log(response);
+        this.props.getTags();
       } catch (error) {
         console.log(error);
       }
@@ -209,6 +209,7 @@ export default class EntityEditorExample extends Component {
       });
       this.props.setClearCard(false);
     }
+
 
     // console.log(this.props.defaultValue, prevProps.defaultValue);
     // if (this.props.defaultValue !== prevProps.defaultValue) {
@@ -306,3 +307,115 @@ export default class EntityEditorExample extends Component {
 
   }
 }
+
+const styles = {
+  editor: {
+    cursor: 'text',
+    minHeight: 80,
+    padding: 0,
+    fontSize: 14,
+    lineHeight: "140%",
+    fontFamily: "Helvetica Neue",
+    color: "#E0E1E2"
+  },
+  card: {
+    // width: '100%',
+    backgroundColor: '#1E1E1E',
+    borderRadius: '10px',
+    overflow: "visible",
+  },
+  cardLight: {
+    // width: '100%',
+    backgroundColor: '#2C3037',
+    borderRadius: '10px',
+    overflow: "visible",
+    width: '100%',
+  },
+  cardHeader: {
+    paddingTop: 0,
+    paddingBottom: 5,
+    paddingLeft: 10,
+  },
+  cardHeaderText: {
+    width: "100%",
+    fontSize: 14,
+    fontFamily: "HelveticaNeue-Light",
+    backgroundColor: "transparent",
+    borderColor: "transparent",
+    color: 'rgba(184, 184, 184, 0.75)',
+    paddingTop: 10,
+    paddingBottom: 5,
+    paddingLeft: 10,
+  },
+  multiSelectDark: {
+    control: (base, state) => ({
+      ...base,
+      background: "#1e1e1e",
+      boxShadow: state.isFocused ? null : null,
+      borderColor: state.isFocused
+        ? '#1e1e1e'
+        : '#1e1e1e',
+      '&:hover': {
+        borderColor: state.isFocused
+          ? '#1e1e1e'
+          : '#1e1e1e',
+        background: "#363636",
+      }
+    }),
+    option: (styles, { data, isDisabled, isFocused, isSelected }) => {
+      const color = data.color ? chroma(data.color) : chroma("grey").brighten(2);
+      return {
+        ...styles,
+        // backgroundColor: isDisabled
+        //   ? null
+        //   : isSelected
+        //     ? color.alpha(0.1).darken(10).css()
+        //     : isFocused
+        //       ? color.alpha(0.1).darken(10).css()
+        //       : null,
+        color: isDisabled
+          ? '#ccc'
+          : isSelected
+            ? chroma.contrast(color, 'white') > 2
+              ? 'white'
+              : 'black'
+            : color.alpha(1).darken(3).saturate(10).luminance(0.4).css(),
+        cursor: isDisabled ? 'not-allowed' : 'default',
+
+        ':active': {
+          ...styles[':active'],
+          backgroundColor: !isDisabled && (isSelected ? data.color : color.alpha(0.3).css()),
+        },
+      };
+    },
+
+    multiValue: (styles, { data }) => {
+      const color = data.color ? chroma(data.color) : chroma(currentColor);
+      return {
+        ...styles,
+        backgroundColor: color.alpha(1).css(),
+      };
+    },
+
+    multiValueLabel: (styles, { data }) => ({
+      ...styles,
+      color: "black",
+    }),
+
+    multiValueRemove: (styles, { data }) => {
+      const color = data.color ? chroma(data.color) : chroma(currentColor);
+      return {
+        ...styles,
+        color: color.darken(2).css(),
+        ':hover': {
+          backgroundColor: color.darken(2).css(),
+          color: 'white',
+        },
+      }
+    },
+
+    // multiValueLabel: base => ({ ...base, color: 'purple', }),
+    // multiValue: base => ({ ...base, color: 'purple', }),
+    input: base => ({ ...base, color: '#E0E1E2', }),
+  },
+};

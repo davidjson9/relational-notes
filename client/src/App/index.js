@@ -13,8 +13,21 @@ const App = () => {
   const [cardEntries, setCardEntries] = useState([]);
   const [searchTags, setSearchTags] = useState([]);
   const [tags, setTags] = useState([]);
+  const [tagFilter, setTagFilter] = useState(new Set());
   const [clearCardProp, setClearCardProp] = useState([]);
   const [curQueryArray, setCurQueryArray] = useState([]);
+
+  const getTags = async () => {
+    try {
+      const tags = await fetchTagEntries();
+      console.log(tags);
+      tags.sort((a, b) => b.count - a.count);
+      setTags(tags);
+      // console.log(cardTags);
+    } catch (error) {
+      // console.log(error);
+    }
+  }
 
   const getCardEntries = async () => {
     const cardEntries = await fetchCardEntries();
@@ -26,6 +39,15 @@ const App = () => {
     const data = { queryTerms: queryArray };
     const cardEntries = await fetchCardEntriesForSearch(data);
     setCardEntries(cardEntries);
+    console.log("cardEntries", cardEntries);
+
+    const gatheredTags = cardEntries.map(e => e.tags).flat();
+    const gatheredLabels = gatheredTags.map(e => e.label);
+    const labels = new Set(gatheredLabels);
+    console.log("gatheredTags", gatheredTags);
+    console.log("labels", labels);
+    console.log("tags", tags.filter(e => labels.has(e.label)));
+    setTagFilter(labels);
   }
 
   const handleSearchChange = async (newValues, actionMeta) => {
@@ -56,6 +78,7 @@ const App = () => {
 
     if (newValues === null || actionMeta.action === "clear") {
       setCurQueryArray([]);
+      setTagFilter(new Set());
       clearCard();
       getCardEntries();
     } else {
@@ -72,8 +95,6 @@ const App = () => {
       clearCard();
       getCardEntriesForSearch(queryArray);
     }
-
-
   }
 
   const clearCard = () => {
@@ -86,19 +107,6 @@ const App = () => {
       getCardEntries();
     } else {
       getCardEntriesForSearch(curQueryArray);
-    }
-
-  }
-
-  const getTags = async () => {
-    try {
-      const tags = await fetchTagEntries();
-      console.log(tags);
-      tags.sort((a, b) => b.count - a.count)
-      setTags(tags);
-      // console.log(cardTags);
-    } catch (error) {
-      // console.log(error);
     }
   }
 
@@ -117,7 +125,7 @@ const App = () => {
             components={{ DropdownIndicator: null, }}
             placeholder="Search"
             onChange={handleSearchChange}
-            options={tags}
+            options={tagFilter.size === 0 ? tags : tags.filter(e => tagFilter.has(e.label))}
             styles={styles.multiSelectDark}
           />
         </div>

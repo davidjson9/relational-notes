@@ -59,7 +59,7 @@ export async function saveTag(data) {
     value: Joi.string().required(),
     color: Joi.string().required(),
     count: Joi.number().required(),
-  });
+  }).unknown(true);
   console.log(data);
   console.log(schema.validate(data));
   if (schema.validate(data).error !== null) return { "error": "VALIDATION FAILED" };
