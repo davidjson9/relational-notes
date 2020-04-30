@@ -13,9 +13,9 @@ const cardSchema = new mongoose.Schema({
 
 const Card = mongoose.model('Card', cardSchema);
 
-router.post('/', async (req, res, next) => {
+router.post('/save', async (req, res, next) => {
   try {
-    console.log(req.body);
+    // console.log(req.body);
     if (req.body.id) {
       const response = await Card.update({ _id: req.body.id }, req.body);
       res.json(response);
