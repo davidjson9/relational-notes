@@ -10,7 +10,7 @@ import debounce from 'lodash/debounce';
 import { colors } from './colors.js'
 
 import { Button, Card, Accordion, Row, Col } from 'react-bootstrap';
-import { saveCard, deleteCard, saveTag } from '../API'
+import { saveCard, deleteCard, saveTag, updateTag, deleteTag } from '../API'
 import CreatableSelect from 'react-select/creatable';
 
 import './editor.css';
@@ -58,6 +58,7 @@ export default class EntityEditorExample extends Component {
     }
 
     this.handleTagChange = (newValues, actionMeta) => {
+      newValues = newValues || [];
       console.group('Value Changed');
       console.log("handleTagChange:", newValues);
       console.log(`action: ${actionMeta.action}`);
@@ -69,25 +70,52 @@ export default class EntityEditorExample extends Component {
           label: newTag.label,
           value: newTag.value,
           color: this.state.curColor,
+          count: 1,
         }
         this.addTag(formattedNewTag);
         this.setNewColor();
         newValues[newValues.length - 1] = formattedNewTag; // this is the important part, and I guess all the CSS is loaded afterwards
       }
 
+      // Handling Tag Count Updates
+      const diff = (large, small) => {
+        return large.filter(function (obj) {
+          return !small.some(function (obj2) {
+            return obj.value === obj2.value;
+          });
+        });
+      }
+
+      if (actionMeta.action === "select-option") {
+        const rawTag = diff(newValues, this.state.tags)[0];
+        console.log("rawTagToAdd", rawTag);
+        this.incrementTag(rawTag.label);
+      }
+
+      if (actionMeta.action === "remove-value" || actionMeta.action === "pop-value") {
+        const rawTag = diff(this.state.tags, newValues)[0];
+        console.log("rawTagToRemove", rawTag);
+        this.decrementTag(rawTag.label);
+      }
+
       const tags = newValues;
       this.setState({ tags }, function () {
+        console.log("this.state.tags", this.state.tags);
         this.saveCard();
       });
     }
 
     this.handleDeleteClick = () => {
-      this.cardDelete(this.state.id);
+      this.state.tags.forEach(e => {
+        const tagLabel = e.label;
+        this.decrementTag(tagLabel);
+      });
+      this.deleteCard(this.state.id);
       const deleted = true;
       this.setState({ deleted });
     }
 
-    this.cardDelete = async (id) => {
+    this.deleteCard = async (id) => {
       const data = { "id": id };
       const res = await deleteCard(data);
       console.log(res)
@@ -102,11 +130,13 @@ export default class EntityEditorExample extends Component {
           rawText: this.state.editorState.getCurrentContent().getPlainText(' '),
           rawContent: JSON.stringify(contentState),
         }
+        console.log("this.state.tags", this.state.tags);
         const response = await saveCard(data);
         if (response._id) {
           const id = response._id;
           this.setState({ id });
         }
+        console.log(response);
       } catch (error) {
         console.log(error);
       }
@@ -117,6 +147,48 @@ export default class EntityEditorExample extends Component {
       try {
         const response = await saveTag(tag);
         this.props.getTags();
+        console.log(response);
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
+    this.deleteTag = async (tag) => {
+      try {
+        const data = {
+          tag: tag,
+        };
+        const response = await deleteTag(data);
+        console.log(response);
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
+    this.incrementTag = async (tag) => {
+      try {
+        const data = {
+          tag: tag,
+          count: 1,
+        };
+        const response = await updateTag(data);
+        console.log(response);
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
+    this.decrementTag = async (tag) => {
+      try {
+        const data = {
+          tag: tag,
+          count: -1,
+        };
+        const response = await updateTag(data);
+        if (response.count === 0) {
+          await this.deleteTag(tag);
+          this.props.getTags();
+        }
         console.log(response);
       } catch (error) {
         console.log(error);
@@ -139,11 +211,12 @@ export default class EntityEditorExample extends Component {
     }
 
     // console.log(this.props.defaultValue, prevProps.defaultValue);
-    if (this.props.defaultValue !== prevProps.defaultValue) {
-      this.setState({
-        tags: this.props.defaultValue
-      })
-    }
+    // if (this.props.defaultValue !== prevProps.defaultValue) {
+    //   console.log("RESET VALUES", this.props.defaultValue, prevProps.defaultValue);
+    //   this.setState({
+    //     tags: this.props.defaultValue
+    //   })
+    // }
 
   }
 
@@ -203,7 +276,7 @@ export default class EntityEditorExample extends Component {
                 <div id="select" style={{ paddingLeft: "10px", paddingRight: "10px" }}>
                   <CreatableSelect
                     isMulti
-                    isClearable
+                    isClearable={false}
                     components={{ DropdownIndicator: null, }}
                     placeholder="Add Tag..."
                     onChange={this.handleTagChange}

@@ -92,8 +92,10 @@ const App = () => {
 
   const getTags = async () => {
     try {
-      const cardTags = await fetchTagEntries();
-      setTags(cardTags);
+      const tags = await fetchTagEntries();
+      console.log(tags);
+      tags.sort((a, b) => b.count - a.count)
+      setTags(tags);
       // console.log(cardTags);
     } catch (error) {
       // console.log(error);
