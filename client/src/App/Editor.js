@@ -36,6 +36,7 @@ export default class EntityEditorExample extends Component {
       deleted: false,
       curColor: currentColor,
       tags: this.props.defaultValue,
+      oldTags: this.props.defaultValue,
     };
 
     this.setSavedBlocks = (savedBlocks) => {
@@ -65,34 +66,16 @@ export default class EntityEditorExample extends Component {
       console.log(`action: ${actionMeta.action}`);
       console.groupEnd();
 
-      const diff = (large, small) => {
-        return large.filter(function (obj) {
-          return !small.some(function (obj2) {
-            return obj.value === obj2.value;
-          });
-        });
-      }
       const latestTag = newValues[newValues.length - 1];
       if (newValues.length > 0 && latestTag.__isNew__) {
         const newTag = {
+          ...latestTag,
           label: latestTag.value,
           value: latestTag.value,
           color: this.state.curColor,
-          count: 1
         };
         newValues[newValues.length - 1] = newTag;
-        this.addTag(newTag);
         this.setNewColor();
-      } else if (actionMeta.action === "select-option") {
-        const rawTag = diff(newValues, this.state.tags)[0];
-        console.log("rawTagToAdd", rawTag);
-        this.incrementTag(rawTag.label);
-      }
-
-      if (actionMeta.action === "remove-value" || actionMeta.action === "pop-value") {
-        const rawTag = diff(this.state.tags, newValues)[0];
-        console.log("rawTagToRemove", rawTag);
-        this.decrementTag(rawTag.label);
       }
 
       const tags = newValues;
@@ -104,10 +87,7 @@ export default class EntityEditorExample extends Component {
     }
 
     this.handleDeleteClick = () => {
-      this.state.tags.forEach(e => {
-        const tagLabel = e.label;
-        this.decrementTag(tagLabel);
-      });
+      this.updateTags([], this.state.tags);
       this.deleteCard(this.state.id);
       const deleted = true;
       this.setState({ deleted });
@@ -130,11 +110,18 @@ export default class EntityEditorExample extends Component {
         }
         console.log("this.state.tags", this.state.tags);
         const response = await saveCard(data);
-        if (response._id) {
+        console.log(response);
+
+        console.log("this.state.tags-this.state.oldTags", this.state.tags, this.state.oldTags);
+        if (response._id) { // we have created a new card!
           const id = response._id;
           this.setState({ id });
+          this.updateTags(this.state.tags, [])
+        } else {
+          this.updateTags(this.state.tags, this.state.oldTags);
         }
-        console.log(response);
+        this.setState({ oldTags: this.state.tags });
+
       } catch (error) {
         console.log(error);
       }
@@ -156,7 +143,7 @@ export default class EntityEditorExample extends Component {
     this.deleteTag = async (tag) => {
       try {
         const data = {
-          tag: tag,
+          tag: tag.label,
         };
         const response = await deleteTag(data);
         console.log(response);
@@ -165,10 +152,40 @@ export default class EntityEditorExample extends Component {
       }
     }
 
+    this.updateTags = (tags, oldTags) => {
+      const diff = (large, small) => {
+        return large.filter(function (obj) {
+          return !small.some(function (obj2) {
+            return obj.value === obj2.value;
+          });
+        });
+      }
+
+      if (tags.length > oldTags.length) { // we've added tags!
+        const addedTags = diff(tags, oldTags);
+        console.log("addedTags", addedTags);
+        addedTags.forEach(addedTag => {
+          if (addedTag.__isNew__) {
+            addedTag.count = 1;
+            addedTag.__isNew__ = false;
+            this.addTag(addedTag);
+          } else {
+            this.incrementTag(addedTag);
+          }
+        })
+      } else { // we've removed tags!
+        const removedTags = diff(oldTags, tags);
+        console.log("removedTags", removedTags);
+        removedTags.forEach(removedTag => {
+          this.decrementTag(removedTag);
+        })
+      }
+    }
+
     this.incrementTag = async (tag) => {
       try {
         const data = {
-          tag: tag,
+          tag: tag.label,
           count: 1,
         };
         const response = await updateTag(data);
@@ -181,7 +198,7 @@ export default class EntityEditorExample extends Component {
     this.decrementTag = async (tag) => {
       try {
         const data = {
-          tag: tag,
+          tag: tag.label,
           count: -1,
         };
         const response = await updateTag(data);

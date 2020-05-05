@@ -39,14 +39,10 @@ const App = () => {
     const data = { queryTerms: queryArray };
     const cardEntries = await fetchCardEntriesForSearch(data);
     setCardEntries(cardEntries);
-    console.log("cardEntries", cardEntries);
 
     const gatheredTags = cardEntries.map(e => e.tags).flat();
     const gatheredLabels = gatheredTags.map(e => e.label);
     const labels = new Set(gatheredLabels);
-    console.log("gatheredTags", gatheredTags);
-    console.log("labels", labels);
-    console.log("tags", tags.filter(e => labels.has(e.label)));
     setTagFilter(labels);
   }
 
